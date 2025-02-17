@@ -52,9 +52,7 @@ public:
 
     vector<Node<S,A> *> expand(Problem<S,A> * problem) {
         vector<Node<S,A> *> children;
-        cout << "ok3.1" << endl;
         for (A action : problem->actions(state)) {
-            cout << "ok3.2" << endl;
             S next_state = problem->result(state, action);
             float cost = path_cost + problem->actionCost(state, action, next_state);
             
@@ -73,7 +71,7 @@ public:
             node = this->parent;
         }
         
-        while (node != nullptr) {
+        while (node->parent != nullptr) {
             solution.push_back(node->getAction());
 
             node = node->parent;
@@ -118,25 +116,20 @@ Node<S,A> * bestFirstSearch(Problem<S,A> * problem, float (*f)(Node<S,A> *)) {
     reached[root_node->getState()] = root_node;
 
     while (frontier.empty() == false) {
-        cout << "ok" << endl;
         Node<S,A> * node = frontier.top();
         frontier.pop();
-
-        cout << "ok2" << endl;
 
         if (problem->isGoal(node->getState())) {
             return node;
         }
 
-        cout << "ok3" << endl;
         for (Node<S,A> * child : node->expand(problem)) {
-            cout << "ok4" << endl;
             S child_state = child->getState();
+            
             if ((reached.count(child_state) == 0) || (child->getPathCost() < reached[child_state]->getPathCost())) {
                 reached[child_state] = child;
                 frontier.push(child);
             }
-            cout << "ok5" << endl;
         }
     }
 
@@ -162,9 +155,9 @@ public:
     GridProblem(vector<int> initial, set<vector<int>> goals) : Problem(initial, goals) {
        // World configuration
        world = {
-           {0,1,0,0,0,0,0,0,0},
-           {0,1,0,0,0,0,0,0,0},
-           {0,0,0,0,0,0,0,0,0}
+           {0,1,0,0,0,0,0,0,0,0},
+           {0,1,0,0,0,0,0,0,0,0},
+           {0,0,0,0,0,0,0,0,0,0}
        };
 
        current_state = initial;
@@ -195,13 +188,13 @@ public:
         if ((state[0] <= 0) || (world[state[0] - 1][state[1]] == 1)) {
             possible_actions.erase(UP);
         }
-        if ((state[0] >= world.size()) || (world[state[0] + 1][state[1]] == 1)) {
+        if ((state[0] >= world.size() - 1) || (world[state[0] + 1][state[1]] == 1)) {
             possible_actions.erase(DOWN);
         }
         if ((state[1] <= 0) || (world[state[0]][state[1] - 1] == 1)) {
             possible_actions.erase(LEFT);
         }
-        if ((state[1] >= world[0].size()) || (world[state[0]][state[1] + 1] == 1)) {
+        if ((state[1] >= world[0].size() - 1) || (world[state[0]][state[1] + 1] == 1)) {
             possible_actions.erase(RIGHT);
         }
 
@@ -211,22 +204,22 @@ public:
     vector<int> result(vector<int> state, Direction action) override {
         vector<int> new_state = state;
         switch (action) {
-            UP:
+            case UP:
                 new_state[0] -= 1;
                 break;
-            DOWN:
+            case DOWN:
                 new_state[0] += 1;
                 break;
-            LEFT:
+            case LEFT:
                 new_state[1] -= 1;
                 break;
-            RIGHT:
+            case RIGHT:
                 new_state[1] += 1;
                 break;
             default:
                 break;
         }
-
+        
         return new_state;
     }
 
@@ -263,30 +256,31 @@ public:
 
     void actionInCurrent(Direction action) {
         switch (action) {
-            UP:
+            case UP:
                 current_state[0] -= 1;
                 break;
-            DOWN:
+            case DOWN:
                 current_state[0] += 1;
                 break;
-            LEFT:
+            case LEFT:
                 current_state[1] -= 1;
                 break;
-            RIGHT:
+            case RIGHT:
                 current_state[1] += 1;
                 break;
             default:
                 break;
         }
+
     }
 };
 
 float f(Node<vector<int>,Direction> * node) {
-    return node->getDepth();
+    return node->getPathCost();
 }
 
 int main() {
-    vector<int> initial = {0,0};
+    vector<int> initial = {1,0};
     
     set<vector<int>> goals;
     vector<int> goal = {1,8};
@@ -296,25 +290,18 @@ int main() {
 
     problem.printWorld();
 
-    for (auto i : problem.actions()) {
-        cout << i;
-    }
-
-    cout << endl;
-
-    cout << problem.isGoal(initial) << endl;
-    cout << problem.isGoal(goal) << endl;
-
-
     Node<vector<int>,Direction> * solution = bestFirstSearch<vector<int>,Direction>(&problem, f);
     
-    cout << "---------------------" << endl;
-    for (Direction action : solution->solution_vec()) {
-        problem.actionInCurrent(action);
-        
-        problem.printWorld();
-
+    if (solution != nullptr) {
         cout << "---------------------" << endl;
+        for (Direction action : solution->solution_vec()) {
+            cout << action << endl;
+            problem.actionInCurrent(action);
+        
+            problem.printWorld();
+
+            cout << "---------------------" << endl;
+        }
     }
     
     return 0;
